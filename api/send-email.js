@@ -5,7 +5,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Access-Control-Allow-Origin", "*") // CORS liberado para qualquer origem
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' })
