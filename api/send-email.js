@@ -5,12 +5,12 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req, res) {
-  // CORS headers
+  // Libera CORS para qualquer origem (como o Framer)
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  // Responde prévia de CORS (preflight)
+  // Responde a requisições OPTIONS (preflight CORS)
   if (req.method === "OPTIONS") {
     return res.status(200).end()
   }
@@ -26,14 +26,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const formattedMessage = message.replace(/\n/g, "<br />")
+
     const data = await resend.emails.send({
       from: 'reminder@carol-levtchenko.com',
       to: to_email,
-      subject: 'Lembrete sobre sua visita ao meu portfólio',
+      subject: 'Portfólio - Senior Product Designer',
       html: `
-        <p>${message.replace(/\n/g, "<br />")}</p>
-        <p><a href="${link}" target="_blank">Confira meu portfólio</a></p>
-      `
+        <p>${formattedMessage}</p>      `,
     })
 
     return res.status(200).json({ success: true, data })
