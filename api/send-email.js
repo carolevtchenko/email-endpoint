@@ -26,15 +26,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const formattedMessage = message.replace(/\n/g, "<br />")
+    const formattedMessage = message.replace(/\/n/g, "<br />")
 
-    const data = await resend.emails.send({
-      from: 'reminder@carol-levtchenko.com',
-      to: to_email,
-      subject: 'Portfólio - Senior Product Designer',
-      html: `
-        <p>${formattedMessage}</p>      `,
-    })
+
+const data = await resend.emails.send({
+  from: 'reminder@carol-levtchenko.com',
+  to: to_email,
+  subject: 'Portfolio - Senior Product Designer',
+  html: `
+    <p>${formattedMessage}</p>  `
+})
 
     return res.status(200).json({ success: true, data })
   } catch (err) {
