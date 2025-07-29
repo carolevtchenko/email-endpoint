@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   try {
     const data = await resend.emails.send({
-      from: 'carol@onboarding.resend.dev',
+      from: 'reminder@carol-levtchenko.com',
       to: to_email,
       subject: 'Lembrete sobre sua visita ao meu portfólio',
       html: `
