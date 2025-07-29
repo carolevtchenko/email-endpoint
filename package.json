@@ -1,6 +1,7 @@
 {
   "name": "email-endpoint",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "resend": "^4.7.0"
   }
