@@ -1,13 +1,13 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método não permitido" })
+    return res.status(405).json({ error: "Método não permitido" });
   }
 
-  const { to_email, message, link } = req.body
+  const { to_email, message, link } = req.body;
 
   // Validação básica
   if (!to_email || !message || !link) {
-    return res.status(400).json({ error: "Campos obrigatórios ausentes" })
+    return res.status(400).json({ error: "Campos obrigatórios ausentes" });
   }
 
   try {
@@ -17,23 +17,25 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        service_id: "service_aipp11z",      // substitua pelo seu ID real
-        template_id: "template_67rqvo8",     // substitua aqui também
-        user_id: "qDPNEj34N6_8efqw5",             // substitua com seu User ID
+        service_id: "service_aipp11z",              // já preenchido
+        template_id: "template_67rqvo8",            // preenchido
+        user_id: "qDPNEj34N6_8efqw5",               // preenchido
         template_params: {
           to_email,
           message,
           link
         }
       })
-    })
+    });
 
     if (!response.ok) {
-      throw new Error("Erro ao enviar o e-mail")
+      const errorText = await response.text();
+      throw new Error(`Erro do EmailJS: ${errorText}`);
     }
 
-    return res.status(200).json({ success: true })
+    return res.status(200).json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message })
+    console.error("Erro detalhado:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
