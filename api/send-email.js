@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const formattedMessage = message.replace(/\n/g, "<br />")
+    const formattedMessage = message.replace(/\n/g, '<br />')
 
     const data = await resend.emails.send({
       from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
@@ -35,13 +35,12 @@ export default async function handler(req, res) {
           <br />
           <p>${signature}</p>
         </div>
-      `,
+      `
     })
 
     return res.status(200).json({ success: true, data })
-  } catch (err) {
-    console.error('Erro detalhado:', err)
-    return res.status(500).json({ error: err.message })
+  } catch (error) {
+    console.error('Erro ao enviar e-mail:', error)
+    return res.status(500).json({ error: 'Erro ao enviar o e-mail' })
   }
 }
-
