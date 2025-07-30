@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
 
 const data = await resend.emails.send({
-  from: 'reminder@carol-levtchenko.com',
+  from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
   to: to_email,
   subject: 'Portfolio - Senior Product Designer',
   html: `
