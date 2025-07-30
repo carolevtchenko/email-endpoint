@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  const { to_email, message, link, linkLabel, signature } = req.body
+  const { to_email, message, portfolioLink, cvLink, cvLabel, signature } = req.body
 
   if (!to_email || !message || !link || !linkLabel || !signature) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes' })
@@ -31,7 +31,8 @@ export default async function handler(req, res) {
       html: `
         <div style="font-family: Inter, sans-serif; color: #4B0055; font-size: 16px; line-height: 1.6;">
           <p>${formattedMessage}</p>
-          <p><a href="${link}" target="_blank" style="color: #2979FF;">${linkLabel}</a></p>
+          <p><a href="${portfolioLink}" target="_blank" style="color: #2979FF;">Acesse meu portfólio</a></p>
+          <p><a href="${cvLink}" target="_blank" style="color: #2979FF;">${cvLabel}</a></p>
           <br />
           <p>${signature}</p>
         </div>
