@@ -1,2 +1,2 @@
 # email-endpoint
-Função para enviar e-mail via EmailJS a partir do Framer
+Função para enviar e-mail via Resend a partir do Framer
