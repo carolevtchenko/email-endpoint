@@ -3,8 +3,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "https://carol-levtchenko.com")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
+  res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
@@ -16,9 +15,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  const { to_email, message, portfolioLink, signature } = req.body
+  const { to_email, message, link, linkLabel, signature } = req.body
 
-  if (!to_email || !message || !portfolioLink || !signature) {
+  if (!to_email || !message || !link || !linkLabel || !signature) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes' })
   }
 
@@ -32,9 +31,7 @@ export default async function handler(req, res) {
       html: `
         <div style="font-family: Inter, sans-serif; color: #4B0055; font-size: 16px; line-height: 1.6;">
           <p>${formattedMessage}</p>
-          <p>👉 <a href="${portfolioLink}" target="_blank" style="color: #2979FF;">carol-levtchenko.com</a></p>
-          <br />
-          <p><a href="https://github.com/carolevtchenko/carol-levtchenko-cv/blob/main/CarolLevtchenko_ProductDesigner_Resume.pdf" target="_blank" style="color: #2979FF;">Click here to view my resume</a></p>
+          <p><a href="${link}" target="_blank" style="color: #2979FF;">${linkLabel}</a></p>
           <br />
           <p>${signature}</p>
         </div>
