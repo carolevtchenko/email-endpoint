@@ -30,8 +30,10 @@ export default async function handler(req, res) {
       subject: 'Portfolio - Senior Product Designer',
       html: `
         <p>${formattedMessage}</p>
-        <p><a href="${link}" target="_blank">${linkLabel}</a></p>
-      `
+        <p><a href="${link}" target="_blank" style="color: #2979FF;">${linkLabel}</a></p>
+        <br />
+        <p>${signature}</p>
+        `
     })
 
     return res.status(200).json({ success: true, data })
