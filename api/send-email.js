@@ -34,7 +34,9 @@ const data = await resend.emails.send({
   to: to_email,
   subject: 'Portfolio - Senior Product Designer',
   html: `
-    <p>${formattedMessage}</p>  `
+    <p>${formattedMessage}</p>
+    📎 <a href="https://github.com/carolevtchenko/carol-levtchenko-cv/raw/main/CarolLevtchenko_ProductDesigner_Resume.pdf" target="_blank">Anexei também meu CV por aqui</a>.
+      `
 })
 
     return res.status(200).json({ success: true, data })
