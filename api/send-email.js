@@ -29,9 +29,9 @@ export default async function handler(req, res) {
       to: to_email,
       subject: 'Portfolio - Senior Product Designer',
       html: `
-        <div style="font-family: Inter, sans-serif; color: #4B0055; font-size: 16px; line-height: 1.6;">
+        <div style="font-family: Inter, sans-serif; color: #000000; font-size: 16px; line-height: 1.6;">
           <p>${formattedMessage}</p>
-          <p><a href="${link}" target="_blank" style="color: #2979FF;">${linkLabel}</a></p>
+          <p><a href="${link}" target="_blank" style="color: #2979FF; font-size: 16px; font-family: Inter, sans-serif;">${linkLabel}</a></p>
           <br />
           <p>${signature}</p>
         </div>
