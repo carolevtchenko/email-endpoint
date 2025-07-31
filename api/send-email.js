@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       html: `
         <div style="font-family: Inter, sans-serif; color: #000000; font-size: 16px; line-height: 1.6;">
           <p>${formattedMessage}</p>
-          <p><a href="${link}" target="_blank" style="font-size: 16px; font-family: Inter, sans-serif;">${linkLabel}</a></p>
+          <p><a href="${link}" target="_blank">${linkLabel}</a></p>
           <br />
           <p>${signature}</p>
         </div>
