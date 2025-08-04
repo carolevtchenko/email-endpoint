@@ -7,16 +7,13 @@ export default function EmailReminderForm(props) {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
         const trimmedEmail = email.trim()
 
-        // Erro 2 – Campo vazio
         if (trimmedEmail === "") {
             setStatus("error-empty")
             return
         }
 
-        // Erro 1 – E-mail com formato inválido
         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)
         if (!isValidEmail) {
             setStatus("error-invalid")
@@ -52,129 +49,165 @@ export default function EmailReminderForm(props) {
             setStatus("error-backend")
         }
     }
+
+    const isError =
+        status === "error-empty" ||
+        status === "error-invalid" ||
+        status === "error-backend"
+
     return (
-        <div style={{ fontFamily: props.font, padding: 16 }}>
-            {status === "success" ? (
-                <p
-                    style={{
-                        fontSize: props.feedbackFontSize,
-                        color: props.successColor,
-                        fontFamily: props.font,
-                    }}
-                >
-                    {props.successMessage}
-                </p>
-            ) : (
-                <form
-                    onSubmit={handleSubmit}
-                    noValidate
-                    style={{
-                        display: "flex", // Mudamos de grid para flex
-                        alignItems: "flex-start", // Alinha pelo topo (para o texto não deslocar o botão)
-                        gap: 16,
-                    }}
-                >
+        <div
+            style={{
+                fontFamily: props.font,
+                padding: 16,
+                width: "100%",
+                maxWidth: 1023,
+                minWidth: 300,
+                boxSizing: "border-box",
+                alignSelf: "stretch",
+            }}
+        >
+            <style>{`
+                .email-form-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+
+                .email-input,
+                .email-button {
+                    width: 100%;
+                }
+            `}</style>
+
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                    height: "auto",
+                    minHeight: 120,
+                }}
+            >
+                {status === "success" ? (
                     <div
                         style={{
                             display: "flex",
-                            flexDirection: "column",
-                            width: 400, // largura fixa para o input
-                            flexShrink: 0, // impede que encolha
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "100%",
+                            textAlign: "center",
                         }}
                     >
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value)
-                                if (status !== "idle") setStatus("idle")
-                            }}
-                            placeholder={props.placeholder}
-                            aria-label="Campo de e-mail"
-                            aria-describedby={
-                                [
-                                    "error-empty",
-                                    "error-invalid",
-                                    "error-backend",
-                                ].includes(status)
-                                    ? "email-error"
-                                    : undefined
-                            }
+                        <p
                             style={{
-                                padding: "8px",
-                                fontSize: 18,
-                                fontFamily: "Manrope, sans-serif",
-                                fontWeight: 500,
-                                color: "#000",
-                                background: props.inputBgColor,
-                                borderRadius: props.inputRadius,
-                                border: `${props.inputStrokeWidth}px solid ${
-                                    [
-                                        "error-empty",
-                                        "error-invalid",
-                                        "error-backend",
-                                    ].includes(status)
-                                        ? "#FF4D4F"
-                                        : props.isFocused
-                                          ? "#F3663F"
-                                          : props.inputStrokeColor
-                                }`,
+                                color: props.successColor,
+                                fontSize: props.feedbackFontSize,
+                                fontFamily: props.font,
+                                lineHeight: 1.4,
                                 width: "100%",
-                                outline: "none",
+                                wordBreak: "break-word",
                             }}
-                            onFocus={() => props.setIsFocused?.(true)}
-                            onBlur={() => props.setIsFocused?.(false)}
-                        />
-
-                        {[
-                            "error-empty",
-                            "error-invalid",
-                            "error-backend",
-                        ].includes(status) && (
-                            <p
-                                id="email-error"
-                                style={{
-                                    color: props.errorColor,
-                                    fontSize: props.feedbackFontSize,
-                                    fontFamily: props.font,
-                                    marginTop: 4,
-                                    lineHeight: 1.4,
-                                    width: "100%",
-                                    wordBreak: "break-word",
-                                }}
-                            >
-                                {status === "error-empty"
-                                    ? props.errorEmptyEmail
-                                    : status === "error-invalid"
-                                      ? props.errorInvalidEmail
-                                      : props.errorBackend}
-                            </p>
-                        )}
+                        >
+                            {props.successMessage}
+                        </p>
                     </div>
-
-                    <button
-                        type="submit"
-                        disabled={status === "loading"}
+                ) : (
+                    <form
+                        onSubmit={handleSubmit}
+                        noValidate
                         style={{
-                            background: props.buttonColor,
-                            color: "#FFFFFF",
-                            fontFamily: "Manrope, sans-serif",
-                            fontSize: 18,
-                            fontWeight: 700,
-                            border: "none",
-                            borderRadius: props.buttonRadius,
-                            padding: "8px 16px",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                            minWidth: 180,
+                            display: "flex",
+                            flexDirection: "row", // muda para empilhar lado a lado
+                            gap: 12,
+                            width: "100%",
+                            flexWrap: "wrap", // para quebrar no mobile
                         }}
                     >
-                        {status === "loading"
-                            ? props.loadingText
-                            : props.buttonText}
-                    </button>
-                </form>
-            )}
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => {
+                                    setEmail(e.target.value)
+                                    if (status !== "idle") setStatus("idle")
+                                }}
+                                placeholder={props.placeholder}
+                                aria-label="Campo de e-mail"
+                                aria-describedby={
+                                    isError ? "email-error" : undefined
+                                }
+                                style={{
+                                    padding: "8px",
+                                    fontSize: 18,
+                                    fontFamily: "Manrope, sans-serif",
+                                    fontWeight: 500,
+                                    color: props.isFocused
+                                        ? props.inputTextColorFocused
+                                        : "#000",
+                                    background: props.inputBgColor,
+                                    borderRadius: props.inputRadius,
+                                    border: `${props.inputStrokeWidth}px solid ${
+                                        isError
+                                            ? "#FF4D4F"
+                                            : props.isFocused
+                                              ? "#F3663F"
+                                              : props.inputStrokeColor
+                                    }`,
+                                    width: "100%",
+                                    boxSizing: "border-box",
+                                }}
+                                onFocus={() => props.setIsFocused?.(true)}
+                                onBlur={() => props.setIsFocused?.(false)}
+                            />
+                            {isError && (
+                                <p
+                                    id="email-error"
+                                    style={{
+                                        color: props.errorColor,
+                                        fontSize: props.feedbackFontSize,
+                                        fontFamily: props.font,
+                                        marginTop: 4,
+                                        lineHeight: 1.4,
+                                        wordBreak: "break-word",
+                                    }}
+                                >
+                                    {status === "error-empty"
+                                        ? props.errorEmptyEmail
+                                        : status === "error-invalid"
+                                          ? props.errorInvalidEmail
+                                          : props.errorBackend}
+                                </p>
+                            )}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={status === "loading"}
+                            style={{
+                                background: props.buttonColor,
+                                color: props.buttonTextColor,
+                                fontFamily: "Manrope, sans-serif",
+                                fontSize: 18,
+                                fontWeight: 700,
+                                border: "none",
+                                borderRadius: props.buttonRadius,
+                                padding: "8px 16px",
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                                flexShrink: 0, // evita esmagamento
+                                height: "fit-content",
+                            }}
+                        >
+                            {status === "loading"
+                                ? props.loadingText
+                                : props.buttonText}
+                        </button>
+                    </form>
+                )}
+            </div>
         </div>
     )
 }
@@ -205,7 +238,17 @@ addPropertyControls(EmailReminderForm, {
         type: ControlType.Number,
         title: "Espessura da borda do campo",
     },
+    inputTextColorFocused: {
+        type: ControlType.Color,
+        title: "Cor do texto do input focado",
+        defaultValue: "#000000",
+    },
     buttonColor: { type: ControlType.Color, title: "Cor do botão" },
+    buttonTextColor: {
+        type: ControlType.Color,
+        title: "Cor do texto do botão",
+        defaultValue: "#FFFFFF",
+    },
     buttonRadius: { type: ControlType.Number, title: "Raio da borda do botão" },
     errorColor: { type: ControlType.Color, title: "Cor do texto de erro" },
     successColor: { type: ControlType.Color, title: "Cor do texto de sucesso" },
