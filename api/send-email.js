@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
         <!-- CV no formato "texto: URL" -->
         <div style="margin: 0;">
-          ${escapeHtml(linkLabel)}: <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(link)}</a>
+          ${escapeHtml(linkLabel)}: <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortLink || link)}</a>
         </div>
 
         <!-- 1 quebra entre CV e assinatura -->
