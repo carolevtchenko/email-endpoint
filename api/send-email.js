@@ -2,22 +2,41 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-/** Deixa todos os links do message como <a> sem estilo, iguais ao Gmail */
-function unifyLinks(html = '') {
-  // 1) Auto-linka URLs "nuas" (http(s) ou domínio)
-  const autoLinked = html.replace(
-    // captura início de linha ou char que não seja @/alfa-num
-    /(^|[^@/A-Za-z0-9])(https?:\/\/[^\s<]+|(?:www\.)?[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s<]*)?)/gi,
-    (_, prefix, url) => {
-      const href = /^https?:\/\//i.test(url) ? url : `https://${url}`
-      return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
+/**
+ * 1) Extrai <a> existentes e limpa style/class
+ * 2) Autolinka apenas URLs “nuas” em texto (fora de tags)
+ * 3) Restaura os <a> originais limpos
+ * 4) Converte quebras de linha em <br />
+ */
+function normalizeMessage(html = '') {
+  const anchors = []
+  // 1) captura <a>...</a> (não mexemos nelas aqui; só limpamos style/class)
+  let tmp = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, (m) => {
+    const cleaned = m
+      .replace(/\sstyle="[^"]*"/gi, '')
+      .replace(/\sclass="[^"]*"/gi, '')
+    anchors.push(cleaned)
+    return `__A_TAG_${anchors.length - 1}__`
+  })
+
+  // 2) autolinka http(s), www. e domínios simples, apenas quando precedidos por espaço/início ou '>'
+  tmp = tmp.replace(
+    /(^|[\s>])((?:https?:\/\/[^\s<]+)|(?:www\.[^\s<]+)|(?:[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s<]*)?))/gi,
+    (_, prefix, raw) => {
+      // remove pontuação terminal comum
+      const m = raw.match(/^(.*?)([).,!?]?)$/)
+      const core = m ? m[1] : raw
+      const trail = m ? m[2] : ''
+      const href = /^https?:\/\//i.test(core) ? core : `https://${core}`
+      return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer">${core}</a>${trail}`
     }
   )
 
-  // 2) Remove estilos/classes de <a> que já existam no message (se houver)
-  return autoLinked
-    .replace(/(<a\b[^>]*?)\sstyle="[^"]*"/gi, '$1')
-    .replace(/(<a\b[^>]*?)\sclass="[^"]*"/gi, '$1')
+  // 3) restaura anchors originais (já sem style/class)
+  tmp = tmp.replace(/__A_TAG_(\d+)__/g, (_, i) => anchors[Number(i)])
+
+  // 4) \n -> <br />
+  return tmp.replace(/\r\n/g, '\n').replace(/\n/g, '<br />')
 }
 
 export default async function handler(req, res) {
@@ -34,7 +53,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const formattedMessage = unifyLinks(message.replace(/\n/g, '<br />'))
+    const formattedMessage = normalizeMessage(message)
 
     const data = await resend.emails.send({
       from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
