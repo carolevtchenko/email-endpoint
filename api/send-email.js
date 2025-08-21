@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 function escapeHtml(str = '') {
@@ -11,20 +10,22 @@ function escapeHtml(str = '') {
     .replace(/'/g, '&#39;')
 }
 
-// Converte <br> (ou &lt;br&gt;) em \n e remove quaisquer tags restantes.
-// Resultado: TEXTO PURO, pronto para ser exibido com pre-wrap.
+// Converte <br> reais/escapados em \n e remove quaisquer tags
 function toPlainText(input = '') {
   let s = String(input).replace(/\r\n/g, '\n')
-  s = s
-    .replace(/&lt;br\s*\/?&gt;/gi, '\n') // <br> escapado
-    .replace(/<br\s*\/?>/gi, '\n')      // <br> real
-  s = s.replace(/<[^>]+>/g, '')         // remove quaisquer tags
+  s = s.replace(/&lt;br\s*\/?&gt;/gi, '\n').replace(/<br\s*\/?>/gi, '\n')
+  s = s.replace(/<[^>]+>/g, '')
   return s
 }
 
-// Prepara para HTML com white-space: pre-wrap
-function preWrapHtml(input = '') {
-  return escapeHtml(toPlainText(input))
+// Remove indentação e espaços excessivos (inclui NBSP/thin spaces)
+function normalizeSpaces(s = '') {
+  return s
+    .replace(/\u00A0/g, ' ')          // NBSP -> espaço
+    .replace(/[\u2000-\u200B]/g, ' ') // thin/zero-width -> espaço
+    .replace(/^[ \t]+/gm, '')         // tira indent no começo da linha
+    .replace(/[ \t]+$/gm, '')         // tira espaços no fim da linha
+    .replace(/[ \t]{2,}/g, ' ')       // colapsa múltiplos espaços
 }
 
 export default async function handler(req, res) {
@@ -41,8 +42,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const msg = preWrapHtml(message)
-    const sig = preWrapHtml(signature)
+    const msg = escapeHtml(normalizeSpaces(toPlainText(message)))
+    const sig = escapeHtml(normalizeSpaces(toPlainText(signature)))
 
     const data = await resend.emails.send({
       from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
@@ -50,8 +51,8 @@ export default async function handler(req, res) {
       subject: 'Portfolio - Senior Product Designer',
       html: `
         <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000;">
-          <!-- Gmail vai autolinkar URLs do texto abaixo -->
-          <div style="margin: 0 0 16px 0; white-space: pre-wrap;">
+          <!-- pre-line: mantém \\n como quebra, colapsa múltiplos espaços -->
+          <div style="margin: 0 0 16px 0; white-space: pre-line;">
             ${msg}
           </div>
 
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
             <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>
           </div>
 
-          <div style="margin: 0; white-space: pre-wrap;">
+          <div style="margin: 0; white-space: pre-line;">
             ${sig}
           </div>
         </div>
