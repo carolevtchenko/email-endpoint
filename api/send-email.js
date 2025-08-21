@@ -2,41 +2,33 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-/**
- * 1) Extrai <a> existentes e limpa style/class
- * 2) Autolinka apenas URLs “nuas” em texto (fora de tags)
- * 3) Restaura os <a> originais limpos
- * 4) Converte quebras de linha em <br />
- */
-function normalizeMessage(html = '') {
-  const anchors = []
-  // 1) captura <a>...</a> (não mexemos nelas aqui; só limpamos style/class)
-  let tmp = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, (m) => {
-    const cleaned = m
-      .replace(/\sstyle="[^"]*"/gi, '')
-      .replace(/\sclass="[^"]*"/gi, '')
-    anchors.push(cleaned)
-    return `__A_TAG_${anchors.length - 1}__`
-  })
+// 1) Escapa HTML do message para evitar tags soltas/indevidas
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
-  // 2) autolinka http(s), www. e domínios simples, apenas quando precedidos por espaço/início ou '>'
-  tmp = tmp.replace(
-    /(^|[\s>])((?:https?:\/\/[^\s<]+)|(?:www\.[^\s<]+)|(?:[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s<]*)?))/gi,
+// 2) Autolinka apenas URLs “nuas” (http(s), www., ou domínio) no TEXTO escapado
+function autoLinkText(plain = '') {
+  const escaped = escapeHtml(plain)
+
+  // substitui apenas fora de tags (não existem tags porque escapamos antes)
+  return escaped.replace(
+    /(^|[\s>])((?:https?:\/\/[^\s<]+)|(?:www\.[^\s<]+)|(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s<]*)?))/gi,
     (_, prefix, raw) => {
-      // remove pontuação terminal comum
-      const m = raw.match(/^(.*?)([).,!?]?)$/)
+      // remove pontuação final comum para fora do link
+      const m = raw.match(/^(.*?)([).,!?;:]*)$/)
       const core = m ? m[1] : raw
       const trail = m ? m[2] : ''
       const href = /^https?:\/\//i.test(core) ? core : `https://${core}`
       return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer">${core}</a>${trail}`
     }
   )
-
-  // 3) restaura anchors originais (já sem style/class)
-  tmp = tmp.replace(/__A_TAG_(\d+)__/g, (_, i) => anchors[Number(i)])
-
-  // 4) \n -> <br />
-  return tmp.replace(/\r\n/g, '\n').replace(/\n/g, '<br />')
+  .replace(/\r\n|\n/g, '<br />')
 }
 
 export default async function handler(req, res) {
@@ -53,7 +45,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const formattedMessage = normalizeMessage(message)
+    // Escapa + autolinka o message (sem estilos inline)
+    const formattedMessage = autoLinkText(message)
 
     const data = await resend.emails.send({
       from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
@@ -70,7 +63,7 @@ export default async function handler(req, res) {
           </p>
 
           <p style="margin: 0;">
-            ${signature}
+            ${escapeHtml(signature)}
           </p>
         </div>
       `,
@@ -82,3 +75,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Erro ao enviar o e-mail' })
   }
 }
+
