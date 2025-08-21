@@ -29,19 +29,21 @@ export default async function handler(req, res) {
       to: to_email,
       subject: 'Portfolio - Senior Product Designer',
       html: `
-  <div style="font-family: Inter, sans-serif; color: #000000; font-size: 16px; line-height: 1.6;">
-    <p style="margin: 0 0 16px 0; font-size: 16px; font-family: Inter, sans-serif;">
-      ${formattedMessage}
-    </p>
-    <p style="margin: 0 0 16px 0;">
-      <a href="${link}" target="_blank" style="color: #2979FF; font-size: 16px; font-family: Inter, sans-serif; text-decoration: none;">
-        ${linkLabel}
-      </a>
-    </p>
-    <p style="margin: 0; font-size: 16px; font-family: Inter, sans-serif;">
-      ${signature}
-    </p>
-  </div>
+  <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000;">
+  <p style="margin: 0 0 16px 0;">
+    ${formattedMessage}
+  </p>
+
+  <p style="margin: 0 0 16px 0;">
+    <a href="${link}" target="_blank" style="color: #0000EE; text-decoration: underline; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">
+      ${linkLabel}
+    </a>
+  </p>
+
+  <p style="margin: 0;">
+    ${signature}
+  </p>
+</div>
 `
     })
 
