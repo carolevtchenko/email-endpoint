@@ -1,27 +1,23 @@
 import { Resend } from 'resend'
-
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-// Converte <br> reais/escapados em \n e remove quaisquer tags HTML
+// helpers (mesmos do seu endpoint final com 1 quebra)
 function toPlainText(input = '') {
   let s = String(input).replace(/\r\n/g, '\n')
   s = s.replace(/&lt;br\s*\/?&gt;/gi, '\n').replace(/<br\s*\/?>/gi, '\n')
   s = s.replace(/<[^>]+>/g, '')
   return s
 }
-
-// Normaliza espaços e *colapsa* linhas vazias; remove linhas vazias no início/fim
 function tidyLines(s = '') {
   return s
-    .replace(/\u00A0/g, ' ')          // NBSP -> espaço comum
-    .replace(/[\u2000-\u200B]/g, ' ') // thin/zero-width -> espaço
-    .replace(/^[ \t]+/gm, '')         // trim esquerda por linha
-    .replace(/[ \t]+$/gm, '')         // trim direita por linha
-    .replace(/\n{3,}/g, '\n\n')       // 3+ quebras -> 1 linha em branco
-    .replace(/^\s*\n+/, '')           // remove linhas vazias iniciais
-    .replace(/\n+\s*$/, '')           // remove linhas vazias finais
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u2000-\u200B]/g, ' ')
+    .replace(/^[ \t]+/gm, '')
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\s*\n+/, '')
+    .replace(/\n+\s*$/, '')
 }
-
 function escapeHtml(str = '') {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -29,6 +25,11 @@ function escapeHtml(str = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+function normalizeUrl(u = '') {
+  const s = String(u).trim()
+  if (!s) return ''
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`
 }
 
 export default async function handler(req, res) {
@@ -39,9 +40,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' })
 
-  const { to_email, message, link, linkLabel, signature } = req.body
+  // 👇 agora aceitamos displayLink (opcional)
+  const { to_email, message, link, linkLabel, signature, displayLink } = req.body
 
-  // Mantém os campos obrigatórios como no seu código original
+  // mesmos obrigatórios de antes
   if (!to_email || !message || !link || !linkLabel || !signature) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes' })
   }
@@ -50,28 +52,18 @@ export default async function handler(req, res) {
     const msg = escapeHtml(tidyLines(toPlainText(message)))
     const sig = escapeHtml(tidyLines(toPlainText(signature)))
 
+    const href = normalizeUrl(link) // para onde o <a> vai
+    const linkText = escapeHtml((displayLink && displayLink.trim()) || link) // o que aparece
+
     const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000;">
-        <!-- mensagem -->
-        <div style="margin: 0; white-space: pre-line;">
-          ${msg}
-        </div>
-
-        <!-- 1 quebra entre mensagem e CV -->
+        <div style="margin: 0; white-space: pre-line;">${msg}</div>
         <br />
-
-        <!-- CV no formato "texto: URL" -->
         <div style="margin: 0;">
-          ${escapeHtml(linkLabel)}: <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortLink || link)}</a>
+          ${escapeHtml(linkLabel)}: <a href="${href}" target="_blank" rel="noopener noreferrer">${linkText}</a>
         </div>
-
-        <!-- 1 quebra entre CV e assinatura -->
         <br />
-
-        <!-- assinatura -->
-        <div style="margin: 0; white-space: pre-line;">
-          ${sig}
-        </div>
+        <div style="margin: 0; white-space: pre-line;">${sig}</div>
       </div>
     `
 
