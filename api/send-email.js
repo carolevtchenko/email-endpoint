@@ -56,8 +56,8 @@ export default async function handler(req, res) {
             ${msg}
           </div>
 
-          <div style="margin: 0 0 16px 0;">
-            <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>
+          <div style="margin: 0 0 16px 0; white-space: pre-line;">
+           ${escapeHtml(linkLabel)}: <a href="${link}" target="_blank" rel="noopener noreferrer">${escapeHtml(link)}</a>
           </div>
 
           <div style="margin: 0; white-space: pre-line;">
