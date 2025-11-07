@@ -118,29 +118,40 @@ export default async function handler(req, res) {
         const topicSummary = await summarizeConversation(raw_conversation_text);
         
         // ------------------------------------------------------------
-        // B. MONTAGEM E ESTILIZAÇÃO DO TEMPLATE (MUDANÇA AQUI)
+        // B. MONTAGEM E ESTILIZAÇÃO DO TEMPLATE (Lógica de Histórico Corrigida)
         // ------------------------------------------------------------
 
         // 1. Preparar Resumo: Markdown * para bullet points HTML
         const topicSummaryHtml = topicSummary
             .replace(/\n/g, '<br/>')
             .replace(/\*/g, '•'); 
+        
+        // 2. Extrair o Bloco de Histórico de Conversa usando as novas tags
+        const historyStartTag = '[[HISTORY_START]]';
+        const historyEndTag = '[[HISTORY_END]]';
 
-        // 2. Preparar Histórico: Converte o texto plano em blocos HTML estilizados
-        // O formato é: \n\n[Date] Author:\nContent
-        const conversationBlocks = email_template.split('\n\n').filter(Boolean);
+        const historyRegex = new RegExp(`${historyStartTag}([\\s\\S]*?)${historyEndTag}`);
+        const historyMatch = email_template.match(historyRegex);
+        
+        // O rawHistoryText é apenas a string de mensagens: \n\n[Date] Author:\nContent...
+        const rawHistoryText = historyMatch ? historyMatch[1].trim() : '';
+        
+        // 3. Gerar o HTML das Bolhas a partir do rawHistoryText (AGORA MAIS SEGURO)
+        const conversationBlocks = rawHistoryText.split('\n\n').filter(Boolean);
         
         let historyHtml = conversationBlocks.map(block => {
-            // Verifica se o bloco começa com a data "[DD/MM/YYYY]" e contem "]:\n"
-            if (!block.includes(']:\n') || !block.startsWith('[')) return ''; 
+            // Verifica se o bloco realmente é uma mensagem (começa com '[' e tem ']:\n')
+            if (!block.includes(']:\n') || !block.startsWith('[')) {
+                return ''; 
+            }
             
             const [header, ...contentParts] = block.split(']:\n'); 
-            const headerText = header + ']'; // [Date] Author
-            const content = contentParts.join(':\n').trim(); // Conteúdo da bolha
+            const headerText = header + ']'; 
+            const content = contentParts.join(':\n').trim(); 
 
-            // Estilos das bolhas:
+            // Estilos das bolhas (mantidos)
             const isUser = headerText.includes('You');
-            const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; // Azul claro vs. Cinza claro
+            const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
             const textColor = '#1a1a1a';
             const headerColor = isUser ? '#0070D2' : '#555555';
 
@@ -160,44 +171,17 @@ export default async function handler(req, res) {
             `;
         }).join('');
 
-        // 3. Montagem do Template Final:
-        // ⚠️ SUBSTITUIÇÃO CORRIGIDA ⚠️
+        // 4. Substituição na Template Final
         
         // A. Substitui o placeholder de Resumo
         let finalHtml = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
             `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
-        // B. Substitui o placeholder do Histórico (agora, substituímos a seção inteira)
-        // O frontend envia a template com o histórico como um bloco de texto plano, 
-        // mas a string base sem as quebras de linha '\n\n' é o que precisamos
-        const baseTemplate = finalHtml;
-
-        // Precisamos localizar o bloco que começa depois de 'Here\'s the history...' e antes de 'Thanks for stopping by...'
-        const historyStartTag = "Here's the history of conversation you've had with my AI Assistant when visiting my portfolio as you asked for.";
-        const historyEndTag = "Thanks for stopping by and see you soon!";
-
-        // Divide a template pelo histórico de texto plano (que está incorreto)
-        // e insere o histórico HTML (que é historyHtml)
+        // B. Substitui o bloco [[HISTORY_START]]...[[HISTORY_END]] pelo HTML gerado.
+        finalHtml = finalHtml.replace(historyRegex, `\n<br/>\n${historyHtml}\n<br/>\n`); 
         
-        // Esta regex captura o bloco de texto plano que deve ser substituído pelo HTML das bolhas.
-        const regexBlockToReplace = new RegExp(
-            `(${historyStartTag})([\\s\\S]*?)(${historyEndTag})`,
-            'g'
-        );
-
-        // Faz a substituição: mantendo o início e o fim da frase, mas inserindo o HTML no meio.
-        finalHtml = baseTemplate.replace(regexBlockToReplace, (match, p1, p2, p3) => {
-            return `
-                ${p1.trim()}
-                <br/><br/>
-                ${historyHtml}
-                <br/>
-                ${p3.trim()}
-            `;
-        });
-        
-        // 4. Estilização do Wrapper Principal (MANTIDA)
+        // 5. Estilização do Wrapper Principal (MANTIDA)
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
@@ -231,12 +215,11 @@ export default async function handler(req, res) {
             </html>
         `;
 
-        // C. Envio do E-mail (Usando Resend)
         const data = await resend.emails.send({
             from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
             to: to_email,
             subject: `Highlights from your chat with Carol's AI Assistant`,
-            html: htmlWrapper, // Envia o HTML estilizado
+            html: htmlWrapper, 
         });
 
         return res.status(200).json({ success: true, flow: "AI_SUMMARY", data });
@@ -251,10 +234,8 @@ export default async function handler(req, res) {
   // 2. FLUXO EXISTENTE (FALLBACK) - MANTIDO
   // ----------------------------------------------------------------------
   else {
-    // 👇 Campos obrigatórios do fluxo antigo
     const { to_email, message, link, linkLabel, signature, displayLink } = body
 
-    // ⚠️ VALIDAÇÃO ORIGINAL MANTIDA ⚠️
     if (!to_email || !message || !link || !linkLabel || !signature) {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes' })
     }
@@ -266,7 +247,6 @@ export default async function handler(req, res) {
       const href = normalizeUrl(link) 
       const linkText = escapeHtml((displayLink && displayLink.trim()) || link) 
 
-      // ⚠️ TEMPLATE HTML ORIGINAL MANTIDO ⚠️
       const html = `
         <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000;">
           <div style="margin: 0; white-space: pre-line;">${msg}</div>
