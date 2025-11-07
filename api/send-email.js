@@ -41,7 +41,7 @@ function normalizeUrl(u = '') {
 
 
 // ----------------------------------------------------------------------
-// FUNÇÃO DE SUMARIZAÇÃO DA IA (Mantida)
+// FUNÇÃO DE SUMARIZAÇÃO DA IA (MANTIDA)
 // ----------------------------------------------------------------------
 async function summarizeConversation(conversationText) {
     if (!GEMINI_API_KEY) {
@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO ATUALIZADA: GERA O HTML DO HISTÓRICO COM ESTILO DE BOLHA DE CHAT E PONTINHA ⬇️
+// ⬇️ NOVA FUNÇÃO: GERA O HTML DO HISTÓRICO A PARTIR DO TEXTO RAW ⬇️
 function generateHistoryHtml(rawConversationText) {
     // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
@@ -105,67 +105,35 @@ function generateHistoryHtml(rawConversationText) {
         const role = parts[0].trim();
         const content = parts.slice(1).join(': ').trim();
 
+        // Estilos das bolhas:
         const isUser = role === 'User';
-        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; // Azul claro para usuário, cinza claro para assistente
+        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
         const textColor = '#1a1a1a';
         const headerColor = isUser ? '#0070D2' : '#555555';
-        const align = isUser ? 'right' : 'left';
-        const messageMargin = isUser ? '0 0 0 60px' : '0 60px 0 0'; // Margem para simular bolhas
 
-        // Data e hora atuais (para o timestamp do e-mail, já que o raw_conversation_text não tem)
+        // Usamos a hora atual, pois o rawConversationText não tem timestamp
         const now = new Date();
-        const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const date = now.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }); // ex: 07 de Nov
-        const displayRole = (role === 'User') ? 'Você' : "Assistente da Carol"; // Tradução
+        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const headerText = `${role} • ${date} ${time}`;
 
         return `
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
                 <tr>
-                    <td align="${align}" style="padding-bottom: 5px;">
-                        <span style="font-size: 11px; color: ${headerColor}; font-weight: 600; font-family: Arial, sans-serif;">
-                            ${displayRole} • ${date} ${time}
-                        </span>
+                    <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 3px 5px; font-weight: 600; font-family: Arial, sans-serif;">
+                        ${headerText}
                     </td>
                 </tr>
                 <tr>
-                    <td align="${align}">
-                        <table border="0" cellspacing="0" cellpadding="0" style="display: inline-block; margin: ${messageMargin};">
-                            <tr>
-                                <td align="${align}" style="padding-bottom: 0;">
-                                    <div style="
-                                        width: 0;
-                                        height: 0;
-                                        border-left: 10px solid transparent;
-                                        border-right: 10px solid transparent;
-                                        border-bottom: 10px solid ${bgColor};
-                                        ${isUser ? 'margin-left: auto;' : 'margin-right: auto;'}
-                                        ${isUser ? 'margin-right: 10px;' : 'margin-left: 10px;'}
-                                        "></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="
-                                    background-color: ${bgColor}; 
-                                    color: ${textColor}; 
-                                    padding: 12px; 
-                                    border-radius: 10px; 
-                                    font-size: 14px; 
-                                    line-height: 1.5; 
-                                    font-family: Arial, sans-serif;
-                                    max-width: 450px; /* Limita largura da bolha */
-                                    text-align: left; /* Garante que o texto dentro da bolha seja alinhado à esquerda */
-                                ">
-                                    ${content.replace(/\n/g, '<br/>')}
-                                </td>
-                            </tr>
-                        </table>
+                    <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                        ${content.replace(/\n/g, '<br/>')}
                     </td>
                 </tr>
             </table>
         `;
     }).join('');
 }
-// ⬆️ FIM DA FUNÇÃO ATUALIZADA ⬆️
+// ⬆️ FIM DA NOVA FUNÇÃO ⬆️
 
 
 export default async function handler(req, res) {
@@ -178,6 +146,9 @@ export default async function handler(req, res) {
 
   const body = req.body;
   
+  // ----------------------------------------------------------------------
+  // 1. CHAVE DE DECISÃO: O NOVO FLUXO (AI ASSISTANT)
+  // ----------------------------------------------------------------------
   if (body.raw_conversation_text && body.email_template) {
     const { to_email, user_name, raw_conversation_text, email_template } = body;
     
@@ -189,7 +160,7 @@ export default async function handler(req, res) {
         // A. Processamento da IA (Sumarização)
         const topicSummary = await summarizeConversation(raw_conversation_text);
         
-        // B. Geração do HTML do Histórico (AGORA COM ESTILO MELHORADO)
+        // B. Geração do HTML do Histórico
         const historyHtml = generateHistoryHtml(raw_conversation_text);
 
         // ------------------------------------------------------------
@@ -203,13 +174,14 @@ export default async function handler(req, res) {
         
         // 2. Substitui o placeholder de Resumo
         let finalHtml = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
-            `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a; font-family: Arial, sans-serif;">${topicSummaryHtml}</div>`
+            `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
         // 3. Substitui o placeholder do Histórico ([[CONVERSATION_HISTORY]])
+        // Insere o cabeçalho do histórico ANTES do HTML das bolhas.
         finalHtml = finalHtml.replace('[[CONVERSATION_HISTORY]]', `
-            <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px; font-family: Arial, sans-serif; color: #1a1a1a;">
-                Histórico da conversa:
+            <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px;">
+                History of conversation:
             </div>
             ${historyHtml}
         `); 
@@ -221,7 +193,7 @@ export default async function handler(req, res) {
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                <title>Destaques do seu chat com o Assistente de IA da Carol</title>
+                <title>Highlights from your chat with Carol's AI Assistant</title>
             </head>
             <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -236,7 +208,7 @@ export default async function handler(req, res) {
                                 <tr>
                                     <td style="padding: 0 30px 30px 30px;">
                                         <p style="font-size: 12px; color: #999999; margin: 0; font-family: Arial, sans-serif;">
-                                            Esta mensagem foi gerada pelo Assistente de IA da Carol Levtchenko.
+                                            This message was generated by Carol Levtchenko's AI Assistant.
                                         </p>
                                     </td>
                                 </tr>
@@ -251,7 +223,7 @@ export default async function handler(req, res) {
         const data = await resend.emails.send({
             from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
             to: to_email,
-            subject: `Destaques do seu chat com o Assistente de IA da Carol`,
+            subject: `Highlights from your chat with Carol's AI Assistant`,
             html: htmlWrapper, 
         });
 
