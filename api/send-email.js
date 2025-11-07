@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import fetch from 'node-fetch'; // Usamos node-fetch para ambientes Node/Vercel
+import fetch from 'node-fetch'; 
 
 // --- Variável Global ---
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -124,14 +124,15 @@ export default async function handler(req, res) {
         // 1. Preparar Resumo: Markdown * para bullet points HTML
         const topicSummaryHtml = topicSummary
             .replace(/\n/g, '<br/>')
-            .replace(/\*/g, '•'); // Substitui * por • para visual de bullet
+            .replace(/\*/g, '•'); 
 
         // 2. Preparar Histórico: Converte o texto plano em blocos HTML estilizados
         // O formato é: \n\n[Date] Author:\nContent
         const conversationBlocks = email_template.split('\n\n').filter(Boolean);
         
         let historyHtml = conversationBlocks.map(block => {
-            if (!block.includes(']:\n')) return ''; // Ignora a primeira linha 'Hello...'
+            // Verifica se o bloco começa com a data "[DD/MM/YYYY]" e contem "]:\n"
+            if (!block.includes(']:\n') || !block.startsWith('[')) return ''; 
             
             const [header, ...contentParts] = block.split(']:\n'); 
             const headerText = header + ']'; // [Date] Author
@@ -160,27 +161,43 @@ export default async function handler(req, res) {
         }).join('');
 
         // 3. Montagem do Template Final:
-        // Substituir o placeholder do resumo
+        // ⚠️ SUBSTITUIÇÃO CORRIGIDA ⚠️
+        
+        // A. Substitui o placeholder de Resumo
         let finalHtml = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
             `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
-        // 4. Remover o placeholder do histórico (que é o texto plano original) e inserir o histórico HTML
-        // Primeiro: Limpar o bloco de texto plano do histórico original da template (entre 'Here\'s the history...' e 'Thanks for stopping by...')
-        const regexHistoryBlock = /Here's the history of conversation you've had with my AI Assistant when visiting my portfolio as you asked for.([\s\S]*?)Thanks for stopping by and see you soon!/g;
+        // B. Substitui o placeholder do Histórico (agora, substituímos a seção inteira)
+        // O frontend envia a template com o histórico como um bloco de texto plano, 
+        // mas a string base sem as quebras de linha '\n\n' é o que precisamos
+        const baseTemplate = finalHtml;
+
+        // Precisamos localizar o bloco que começa depois de 'Here\'s the history...' e antes de 'Thanks for stopping by...'
+        const historyStartTag = "Here's the history of conversation you've had with my AI Assistant when visiting my portfolio as you asked for.";
+        const historyEndTag = "Thanks for stopping by and see you soon!";
+
+        // Divide a template pelo histórico de texto plano (que está incorreto)
+        // e insere o histórico HTML (que é historyHtml)
         
-        finalHtml = finalHtml.replace(regexHistoryBlock, (match, p1) => {
-            // Este bloco agora insere o HTML das bolhas e as linhas de texto acima e abaixo.
+        // Esta regex captura o bloco de texto plano que deve ser substituído pelo HTML das bolhas.
+        const regexBlockToReplace = new RegExp(
+            `(${historyStartTag})([\\s\\S]*?)(${historyEndTag})`,
+            'g'
+        );
+
+        // Faz a substituição: mantendo o início e o fim da frase, mas inserindo o HTML no meio.
+        finalHtml = baseTemplate.replace(regexBlockToReplace, (match, p1, p2, p3) => {
             return `
-                Here's the history of conversation you've had with my AI Assistant when visiting my portfolio as you asked for.
+                ${p1.trim()}
                 <br/><br/>
                 ${historyHtml}
                 <br/>
-                Thanks for stopping by and see you soon!
+                ${p3.trim()}
             `;
         });
         
-        // 5. Estilização do Wrapper Principal
+        // 4. Estilização do Wrapper Principal (MANTIDA)
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
