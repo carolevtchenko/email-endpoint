@@ -93,6 +93,49 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
+// ⬇️ NOVA FUNÇÃO: GERA O HTML DO HISTÓRICO A PARTIR DO TEXTO RAW ⬇️
+function generateHistoryHtml(rawConversationText) {
+    // rawConversationText format: "User: content\nAssistant: content\n..."
+    const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
+
+    return blocks.map(block => {
+        const parts = block.split(': ');
+        if (parts.length < 2) return ''; 
+
+        const role = parts[0].trim();
+        const content = parts.slice(1).join(': ').trim();
+
+        // Estilos das bolhas:
+        const isUser = role === 'User';
+        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
+        const textColor = '#1a1a1a';
+        const headerColor = isUser ? '#0070D2' : '#555555';
+
+        // Usamos a hora atual, pois o rawConversationText não tem timestamp
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const headerText = `${role} • ${date} ${time}`;
+
+        return `
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
+                <tr>
+                    <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 3px 5px; font-weight: 600; font-family: Arial, sans-serif;">
+                        ${headerText}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                        ${content.replace(/\n/g, '<br/>')}
+                    </td>
+                </tr>
+            </table>
+        `;
+    }).join('');
+}
+// ⬆️ FIM DA NOVA FUNÇÃO ⬆️
+
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -117,8 +160,11 @@ export default async function handler(req, res) {
         // A. Processamento da IA (Sumarização)
         const topicSummary = await summarizeConversation(raw_conversation_text);
         
+        // B. Geração do HTML do Histórico
+        const historyHtml = generateHistoryHtml(raw_conversation_text);
+
         // ------------------------------------------------------------
-        // B. MONTAGEM E ESTILIZAÇÃO DO TEMPLATE (Lógica de Histórico Corrigida)
+        // C. MONTAGEM FINAL DO TEMPLATE
         // ------------------------------------------------------------
 
         // 1. Preparar Resumo: Markdown * para bullet points HTML
@@ -126,62 +172,21 @@ export default async function handler(req, res) {
             .replace(/\n/g, '<br/>')
             .replace(/\*/g, '•'); 
         
-        // 2. Extrair o Bloco de Histórico de Conversa usando as novas tags
-        const historyStartTag = '[[HISTORY_START]]';
-        const historyEndTag = '[[HISTORY_END]]';
-
-        const historyRegex = new RegExp(`${historyStartTag}([\\s\\S]*?)${historyEndTag}`);
-        const historyMatch = email_template.match(historyRegex);
-        
-        // O rawHistoryText é apenas a string de mensagens: \n\n[Date] Author:\nContent...
-        const rawHistoryText = historyMatch ? historyMatch[1].trim() : '';
-        
-        // 3. Gerar o HTML das Bolhas a partir do rawHistoryText (AGORA MAIS SEGURO)
-        const conversationBlocks = rawHistoryText.split('\n\n').filter(Boolean);
-        
-        let historyHtml = conversationBlocks.map(block => {
-            // Verifica se o bloco realmente é uma mensagem (começa com '[' e tem ']:\n')
-            if (!block.includes(']:\n') || !block.startsWith('[')) {
-                return ''; 
-            }
-            
-            const [header, ...contentParts] = block.split(']:\n'); 
-            const headerText = header + ']'; 
-            const content = contentParts.join(':\n').trim(); 
-
-            // Estilos das bolhas (mantidos)
-            const isUser = headerText.includes('You');
-            const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
-            const textColor = '#1a1a1a';
-            const headerColor = isUser ? '#0070D2' : '#555555';
-
-            return `
-                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
-                    <tr>
-                        <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 3px 5px; font-weight: 600; font-family: Arial, sans-serif;">
-                            ${headerText.replace(/\n/g, '')}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
-                            ${content.replace(/\n/g, '<br/>')}
-                        </td>
-                    </tr>
-                </table>
-            `;
-        }).join('');
-
-        // 4. Substituição na Template Final
-        
-        // A. Substitui o placeholder de Resumo
+        // 2. Substitui o placeholder de Resumo
         let finalHtml = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
             `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
-        // B. Substitui o bloco [[HISTORY_START]]...[[HISTORY_END]] pelo HTML gerado.
-        finalHtml = finalHtml.replace(historyRegex, `\n<br/>\n${historyHtml}\n<br/>\n`); 
+        // 3. Substitui o placeholder do Histórico ([[CONVERSATION_HISTORY]])
+        // Insere o cabeçalho do histórico ANTES do HTML das bolhas.
+        finalHtml = finalHtml.replace('[[CONVERSATION_HISTORY]]', `
+            <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px;">
+                History of conversation:
+            </div>
+            ${historyHtml}
+        `); 
         
-        // 5. Estilização do Wrapper Principal (MANTIDA)
+        // 4. Estilização do Wrapper Principal (MANTIDA)
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
