@@ -94,7 +94,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO DO HISTÓRICO (CORREÇÃO DO BOLD) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (MANTIDA) ⬇️
 function generateHistoryHtml(rawConversationText) {
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
     const fontStack = "'Manrope', Arial, sans-serif"; // Nossa fonte
@@ -119,12 +119,10 @@ function generateHistoryHtml(rawConversationText) {
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
         const headerText = `${displayName} - ${dateStr} | ${timeStr}`;
         
-        // --- (MUDANÇA APLICADA AQUI) ---
         // Converte o markdown do conteúdo da bolha
         const processedContent = content
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 1. Converte bold
             .replace(/\n/g, '<br/>'); // 2. Converte quebras de linha
-        // --- (FIM DA MUDANÇA) ---
 
         return `
             <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -212,8 +210,7 @@ export default async function handler(req, res) {
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                <title>Highlights from your chat with Carol's AI Assistant</title>
-                <style type="text/css">
+                <title>Portfolio - AI chat history</title> <style type="text/css">
                     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&display=swap');
                 </style>
                 </head>
@@ -236,9 +233,10 @@ export default async function handler(req, res) {
         `;
 
         const data = await resend.emails.send({
-            from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
+            // (REMETENTE DO FLUXO AI)
+            from: 'Carol Levtchenko <ai.assistant.chat@carol-levtchenko.com.br>',
             to: to_email,
-            subject: `Portfolio - AI chat history for ${user_name || 'User'}`,
+            subject: 'Portfolio - AI chat history',
             html: htmlWrapper, 
         });
 
@@ -251,7 +249,7 @@ export default async function handler(req, res) {
   } 
   
   // ----------------------------------------------------------------------
-  // 2. FLUXO EXISTENTE (FALLBACK) - (FONTE APLICADA)
+  // 2. FLUXO EXISTENTE (FALLBACK) - (REMETENTE REVERTIDO)
   // ----------------------------------------------------------------------
   else {
     const { to_email, message, link, linkLabel, signature, displayLink } = body
@@ -278,9 +276,11 @@ export default async function handler(req, res) {
           <div style="margin: 0; white-space: pre-line;">${sig}</div>
         </div>
       `
-
       const data = await resend.emails.send({
+        // --- (MUDANÇA APLICADA AQUI) ---
+        // (REMETENTE DO FLUXO ORIGINAL/REMINDER)
         from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
+        // --- (FIM DA MUDANÇA) ---
         to: to_email,
         subject: 'Portfolio - Senior Product Designer',
         html,
