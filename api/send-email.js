@@ -238,7 +238,7 @@ export default async function handler(req, res) {
         const data = await resend.emails.send({
             from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
             to: to_email,
-            subject: `Highlights from your chat with Carol's AI Assistant`,
+            subject: `Portfolio - AI chat history for ${user_name || 'User'}`,
             html: htmlWrapper, 
         });
 
