@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 const resend = new Resend(process.env.RESEND_API_KEY)
 // --- Variável Global da IA ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
-const GEMINI_MODEL = "gemini-2.5-flash"; // Mantive o seu modelo original
+const GEMINI_MODEL = "gemini-2.5-flash"; 
 
 // --- HELPER FUNCTIONS (Mantidas) ---
 function toPlainText(input = '') {
@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO CORRIGIDA: GERA O HTML DO HISTÓRICO NO ESTILO DE CHAT ⬇️
+// ⬇️ FUNÇÃO CORRIGIDA (ESPAÇAMENTO REDUZIDO PARA 10px) ⬇️
 function generateHistoryHtml(rawConversationText) {
     // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
@@ -107,27 +107,22 @@ function generateHistoryHtml(rawConversationText) {
 
         const isUser = role === 'User';
         
-        // --- NOSSAS MUDANÇAS ---
+        // --- Estilos ---
         const align = isUser ? 'right' : 'left';
-        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; // Azul para User, Cinza para Assistant
-        const headerColor = isUser ? '#0070D2' : '#555555'; // Cor do header
-        const headerAlign = align; // Alinha o texto do header com a bolha
+        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
+        const headerColor = isUser ? '#0070D2' : '#555555'; 
+        const headerAlign = align; 
         const textColor = '#1a1a1a';
 
-        // Mapeia os 'roles' internos para os nomes de exibição do seu 1º screenshot
+        // --- Nomes e Timestamps (Mantidos) ---
         const displayName = isUser ? 'You' : "Carol's Assistant"; 
-        
-        // Recria o formato do timestamp do 1º screenshot: "Sat 11/08 | 22:03"
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-        
-        // Usa o 'displayName' e o formato de data/hora do screenshot
         const headerText = `${displayName} - ${dateStr} | ${timeStr}`;
-        // --- FIM DAS MUDANÇAS ---
-
+        
         return `
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 10px;">
                 <tr>
                     <td>
                         <table align="${align}" border="0" cellspacing="0" cellpadding="0" style="max-width: 75%; border-collapse: collapse;"> 
