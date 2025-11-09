@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 const resend = new Resend(process.env.RESEND_API_KEY)
 // --- Variável Global da IA ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
-const GEMINI_MODEL = "gemini-1.5-flash"; // Modelo atualizado
+const GEMINI_MODEL = "gemini-2.5-flash"; // Mantive o seu modelo original
 
 // --- HELPER FUNCTIONS (Mantidas) ---
 function toPlainText(input = '') {
@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO MODIFICADA: GERA O HTML DO HISTÓRICO NO ESTILO DE CHAT ⬇️
+// ⬇️ FUNÇÃO CORRIGIDA: GERA O HTML DO HISTÓRICO NO ESTILO DE CHAT ⬇️
 function generateHistoryHtml(rawConversationText) {
     // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
@@ -114,10 +114,10 @@ function generateHistoryHtml(rawConversationText) {
         const headerAlign = align; // Alinha o texto do header com a bolha
         const textColor = '#1a1a1a';
 
-        // Mapeia os 'roles' internos para os nomes de exibição do screenshot
+        // Mapeia os 'roles' internos para os nomes de exibição do seu 1º screenshot
         const displayName = isUser ? 'You' : "Carol's Assistant"; 
         
-        // Recria o formato do timestamp do screenshot: "Sat 11/08 | 22:03"
+        // Recria o formato do timestamp do 1º screenshot: "Sat 11/08 | 22:03"
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -148,7 +148,7 @@ function generateHistoryHtml(rawConversationText) {
         `;
     }).join('');
 }
-// ⬆️ FIM DA FUNÇÃO MODIFICADA ⬆️
+// ⬆️ FIM DA FUNÇÃO CORRIGIDA ⬆️
 
 
 export default async function handler(req, res) {
