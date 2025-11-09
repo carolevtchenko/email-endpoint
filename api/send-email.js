@@ -55,11 +55,11 @@ async function summarizeConversation(conversationText) {
         Rules:
         1. Identify the 3 to 5 main topics or groups of related questions.
         2. Provide a brief, engaging summary (2-3 sentences max) for each topic.
-        3. Format the output strictly as a clean, unordered markdown list (* Topic: Summary).
+        3. Format the output strictly as a clean, unordered markdown list (e.g., * Title: Summary). 
+           **DO NOT include the literal word "Topic:" in your response.**
         4. DO NOT include any conversation metadata, greetings, or the final signature.
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
         6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
-        7. Do not write the word "Topic" in the output, before the topic's title;
     `;
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
@@ -179,24 +179,33 @@ export default async function handler(req, res) {
         const historyHtml = generateHistoryHtml(raw_conversation_text);
 
         // ------------------------------------------------------------
-        // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA CORRIGIDA)
+        // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA DE ERRO APLICADA)
         // ------------------------------------------------------------
+        
+        let processedTemplate = email_template; // Define template inicial
 
-        // 1. Preparar Resumo: Converte **bold** PRIMEIRO, depois *bullets*
-        const topicSummaryHtml = topicSummary
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-            .replace(/\*/g, '•') 
-            .replace(/\n/g, '<br/>');
+        // --- (MUDANÇA APLICADA AQUI) ---
+        // 1. Verificar Resumo e Injetar
+        if (topicSummary.startsWith('⚠️')) {
+            // Se a sumarização falhou, remove o placeholder (não mostra nada)
+            processedTemplate = processedTemplate.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', '');
+        } else {
+            // Se teve sucesso, formata e injeta o resumo
+            const topicSummaryHtml = topicSummary
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*/g, '•')
+                .replace(/\n/g, '<br/>');
+
+            processedTemplate = processedTemplate.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]',
+                `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a; font-family: ${fontStack};">${topicSummaryHtml}</div>`
+            );
+        }
+        // --- (FIM DA MUDANÇA) ---
         
-        // 2. Substitui o placeholder de Resumo (aplicando a fonte)
-        let processedTemplate = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
-            `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a; font-family: ${fontStack};">${topicSummaryHtml}</div>`
-        );
-        
-        // 3. Converte \n para <br> APENAS no template de TEXTO.
+        // 2. Converte \n para <br> APENAS no template de TEXTO.
         processedTemplate = processedTemplate.replace(/\n/g, '<br/>');
 
-        // 4. AGORA, substituímos o placeholder pelo HTML PURO. (aplicando a fonte)
+        // 3. AGORA, substituímos o placeholder pelo HTML PURO. (aplicando a fonte)
         const finalHtml = processedTemplate.replace('[[CONVERSATION_HISTORY]]', `
             <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px; font-family: ${fontStack};">
                 History of conversation:
@@ -204,7 +213,7 @@ export default async function handler(req, res) {
             ${historyHtml}
         `); 
         
-        // 5. Estilização do Wrapper Principal
+        // 4. Estilização do Wrapper Principal
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
@@ -234,9 +243,8 @@ export default async function handler(req, res) {
         `;
 
         const data = await resend.emails.send({
-            // --- (MUDANÇA APLICADA AQUI) ---
+            // (REMETENTE DO FLUXO AI)
             from: 'Carol Levtchenko <ai.assistant@carol-levtchenko.com>',
-            // --- (FIM DA MUDANÇA) ---
             to: to_email,
             subject: 'Portfolio - AI chat history',
             html: htmlWrapper, 
