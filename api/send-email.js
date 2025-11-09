@@ -41,13 +41,14 @@ function normalizeUrl(u = '') {
 
 
 // ----------------------------------------------------------------------
-// FUNÇÃO DE SUMARIZAÇÃO DA IA (MANTIDA)
+// FUNÇÃO DE SUMARIZAÇÃO DA IA (PROMPT ATUALIZADO)
 // ----------------------------------------------------------------------
 async function summarizeConversation(conversationText) {
     if (!GEMINI_API_KEY) {
         return "⚠️ Não foi possível gerar o resumo. A chave da API Gemini está ausente.";
     }
 
+    // --- (MUDANÇA APLICADA AQUI) ---
     const systemPrompt = `
         You are an expert summary generator. Analyze the following conversation history between a User and Carol's Assistant. 
         Your task is to identify and summarize the key topics discussed.
@@ -58,7 +59,9 @@ async function summarizeConversation(conversationText) {
         3. Format the output strictly as a clean, unordered markdown list (* Topic: Summary).
         4. DO NOT include any conversation metadata, greetings, or the final signature.
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
+        6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
     `;
+    // --- (FIM DA MUDANÇA) ---
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
     
@@ -107,7 +110,6 @@ function generateHistoryHtml(rawConversationText) {
         
         const align = isUser ? 'right' : 'left';
         const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
-        // --- (MUDANÇA 2 APLICADA) ---
         const headerColor = '#555555'; // Cor unificada (cinza escuro)
         const headerAlign = align; 
         const textColor = '#1a1a1a';
@@ -175,7 +177,6 @@ export default async function handler(req, res) {
         // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA CORRIGIDA)
         // ------------------------------------------------------------
 
-        // --- (MUDANÇA 1 APLICADA) ---
         // 1. Preparar Resumo: Converte **bold** PRIMEIRO, depois *bullets*
         const topicSummaryHtml = topicSummary
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 1. Converte bold
