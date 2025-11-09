@@ -41,14 +41,13 @@ function normalizeUrl(u = '') {
 
 
 // ----------------------------------------------------------------------
-// FUNÇÃO DE SUMARIZAÇÃO DA IA (PROMPT ATUALIZADO)
+// FUNÇÃO DE SUMARIZAÇÃO DA IA (MANTIDA)
 // ----------------------------------------------------------------------
 async function summarizeConversation(conversationText) {
     if (!GEMINI_API_KEY) {
         return "⚠️ Não foi possível gerar o resumo. A chave da API Gemini está ausente.";
     }
 
-    // --- (MUDANÇA APLICADA AQUI) ---
     const systemPrompt = `
         You are an expert summary generator. Analyze the following conversation history between a User and Carol's Assistant. 
         Your task is to identify and summarize the key topics discussed.
@@ -62,7 +61,6 @@ async function summarizeConversation(conversationText) {
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
         6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
     `;
-    // --- (FIM DA MUDANÇA) ---
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
     
@@ -97,11 +95,32 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO DO HISTÓRICO (MANTIDA) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (LÓGICA CORRIGIDA) ⬇️
 function generateHistoryHtml(rawConversationText) {
-    const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
-    const fontStack = "'Manrope', Arial, sans-serif"; // Nossa fonte
+    const lines = rawConversationText.split('\n');
+    const blocks = [];
+    const fontStack = "'Manrope', Arial, sans-serif";
 
+    // --- (MUDANÇA APLICADA AQUI) ---
+    // Agrupa linhas órfãs na mensagem anterior
+    for (const line of lines) {
+        if (line.trim().length === 0) continue; // Pula linhas em branco
+        
+        // Se a linha começa com um prefixo de 'role', é uma nova mensagem
+        if (line.startsWith('User: ') || line.startsWith('Assistant: ')) {
+            blocks.push(line);
+        } else {
+            // Se não começa, é uma continuação da mensagem anterior
+            if (blocks.length > 0) {
+                blocks[blocks.length - 1] += '\n' + line; // Adiciona a linha ao bloco anterior
+            }
+            // (Ignora linhas órfãs no início)
+        }
+    }
+    // --- (FIM DA MUDANÇA) ---
+
+    // Agora 'blocks' contém as mensagens agrupadas corretamente.
+    // O código .map() abaixo funciona como estava.
     return blocks.map(block => {
         const parts = block.split(': ');
         if (parts.length < 2) return ''; 
