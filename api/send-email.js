@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 const resend = new Resend(process.env.RESEND_API_KEY)
 // --- Variável Global da IA ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
-const GEMINI_MODEL = "gemini-2.5-flash"; 
+const GEMINI_MODEL = "gemini-1.5-flash"; // Modelo atualizado
 
 // --- HELPER FUNCTIONS (Mantidas) ---
 function toPlainText(input = '') {
@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ NOVA FUNÇÃO: GERA O HTML DO HISTÓRICO A PARTIR DO TEXTO RAW ⬇️
+// ⬇️ FUNÇÃO MODIFICADA: GERA O HTML DO HISTÓRICO NO ESTILO DE CHAT ⬇️
 function generateHistoryHtml(rawConversationText) {
     // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
@@ -102,38 +102,53 @@ function generateHistoryHtml(rawConversationText) {
         const parts = block.split(': ');
         if (parts.length < 2) return ''; 
 
-        const role = parts[0].trim();
+        const role = parts[0].trim(); // "User" or "Assistant"
         const content = parts.slice(1).join(': ').trim();
 
-        // Estilos das bolhas:
         const isUser = role === 'User';
-        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
+        
+        // --- NOSSAS MUDANÇAS ---
+        const align = isUser ? 'right' : 'left';
+        const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; // Azul para User, Cinza para Assistant
+        const headerColor = isUser ? '#0070D2' : '#555555'; // Cor do header
+        const headerAlign = align; // Alinha o texto do header com a bolha
         const textColor = '#1a1a1a';
-        const headerColor = isUser ? '#0070D2' : '#555555';
 
-        // Usamos a hora atual, pois o rawConversationText não tem timestamp
+        // Mapeia os 'roles' internos para os nomes de exibição do screenshot
+        const displayName = isUser ? 'You' : "Carol's Assistant"; 
+        
+        // Recria o formato do timestamp do screenshot: "Sat 11/08 | 22:03"
         const now = new Date();
-        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const headerText = `${role} • ${date} ${time}`;
+        const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        
+        // Usa o 'displayName' e o formato de data/hora do screenshot
+        const headerText = `${displayName} - ${dateStr} | ${timeStr}`;
+        // --- FIM DAS MUDANÇAS ---
 
         return `
             <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 15px;">
                 <tr>
-                    <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 3px 5px; font-weight: 600; font-family: Arial, sans-serif;">
-                        ${headerText}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
-                        ${content.replace(/\n/g, '<br/>')}
+                    <td>
+                        <table align="${align}" border="0" cellspacing="0" cellpadding="0" style="max-width: 75%; border-collapse: collapse;"> 
+                            <tr>
+                                <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 4px 5px; font-weight: 600; font-family: Arial, sans-serif; text-align: ${headerAlign};">
+                                    ${headerText}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                    ${content.replace(/\n/g, '<br/>')}
+                                </td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
         `;
     }).join('');
 }
-// ⬆️ FIM DA NOVA FUNÇÃO ⬆️
+// ⬆️ FIM DA FUNÇÃO MODIFICADA ⬆️
 
 
 export default async function handler(req, res) {
@@ -160,7 +175,7 @@ export default async function handler(req, res) {
         // A. Processamento da IA (Sumarização)
         const topicSummary = await summarizeConversation(raw_conversation_text);
         
-        // B. Geração do HTML do Histórico
+        // B. Geração do HTML do Histórico (AGORA COM O NOVO ESTILO)
         const historyHtml = generateHistoryHtml(raw_conversation_text);
 
         // ------------------------------------------------------------
