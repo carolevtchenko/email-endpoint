@@ -233,8 +233,9 @@ export default async function handler(req, res) {
         `;
 
         const data = await resend.emails.send({
-            // (REMETENTE DO FLUXO AI)
-            from: 'Carol Levtchenko <ai.assistant.chat@carol-levtchenko.com.br>',
+            // --- (MUDANÇA APLICADA AQUI) ---
+            from: 'Carol Levtchenko <ai.assistant@carol-levtchenko.com>',
+            // --- (FIM DA MUDANÇA) ---
             to: to_email,
             subject: 'Portfolio - AI chat history',
             html: htmlWrapper, 
@@ -249,7 +250,7 @@ export default async function handler(req, res) {
   } 
   
   // ----------------------------------------------------------------------
-  // 2. FLUXO EXISTENTE (FALLBACK) - (REMETENTE REVERTIDO)
+  // 2. FLUXO EXISTENTE (FALLBACK) - (MANTIDO)
   // ----------------------------------------------------------------------
   else {
     const { to_email, message, link, linkLabel, signature, displayLink } = body
@@ -277,10 +278,8 @@ export default async function handler(req, res) {
         </div>
       `
       const data = await resend.emails.send({
-        // --- (MUDANÇA APLICADA AQUI) ---
         // (REMETENTE DO FLUXO ORIGINAL/REMINDER)
         from: 'Carol Levtchenko <reminder@carol-levtchenko.com>',
-        // --- (FIM DA MUDANÇA) ---
         to: to_email,
         subject: 'Portfolio - Senior Product Designer',
         html,
