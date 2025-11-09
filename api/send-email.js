@@ -35,7 +35,7 @@ function escapeHtml(str = '') {
 function normalizeUrl(u = '') {
   const s = String(u).trim()
   if (!s) return ''
-  return /^https?:\/\//i.test(s) ? s : `https://${s}`
+  return /^https?:\/\//i.test(s) ? s : `https://s`
 }
 // --- FIM DOS HELPER FUNCTIONS ---
 
@@ -94,7 +94,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO DO HISTÓRICO (FONTE MANROPE APLICADA) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (CORREÇÃO DO BOLD) ⬇️
 function generateHistoryHtml(rawConversationText) {
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
     const fontStack = "'Manrope', Arial, sans-serif"; // Nossa fonte
@@ -119,6 +119,13 @@ function generateHistoryHtml(rawConversationText) {
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
         const headerText = `${displayName} - ${dateStr} | ${timeStr}`;
         
+        // --- (MUDANÇA APLICADA AQUI) ---
+        // Converte o markdown do conteúdo da bolha
+        const processedContent = content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 1. Converte bold
+            .replace(/\n/g, '<br/>'); // 2. Converte quebras de linha
+        // --- (FIM DA MUDANÇA) ---
+
         return `
             <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
@@ -131,8 +138,7 @@ function generateHistoryHtml(rawConversationText) {
                             </tr>
                             <tr>
                                 <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: ${fontStack};">
-                                    ${content.replace(/\n/g, '<br/>')}
-                                </td>
+                                    ${processedContent} </td>
                             </tr>
                         </table>
                     </td>
@@ -261,7 +267,6 @@ export default async function handler(req, res) {
       const href = normalizeUrl(link) 
       const linkText = escapeHtml((displayLink && displayLink.trim()) || link) 
 
-      // (MUDANÇA APLICADA)
       const html = `
         <div style="font-family: ${fontStack}; font-size: 14px; color: #000000;">
           <div style="margin: 0; white-space: pre-line;">${msg}</div>
