@@ -41,13 +41,14 @@ function normalizeUrl(u = '') {
 
 
 // ----------------------------------------------------------------------
-// FUNÇÃO DE SUMARIZAÇÃO DA IA (MANTIDA)
+// FUNÇÃO DE SUMARIZAÇÃO DA IA (PROMPT ATUALIZADO)
 // ----------------------------------------------------------------------
 async function summarizeConversation(conversationText) {
     if (!GEMINI_API_KEY) {
         return "⚠️ Não foi possível gerar o resumo. A chave da API Gemini está ausente.";
     }
 
+    // --- (MUDANÇA APLICADA AQUI) ---
     const systemPrompt = `
         You are an expert summary generator. Analyze the following conversation history between a User and Carol's Assistant. 
         Your task is to identify and summarize the key topics discussed.
@@ -55,12 +56,13 @@ async function summarizeConversation(conversationText) {
         Rules:
         1. Identify the 3 to 5 main topics or groups of related questions.
         2. Provide a brief, engaging summary (2-3 sentences max) for each topic.
-        3. Format the output strictly as a clean, unordered markdown list (e.g., * Title: Summary). 
-           **DO NOT include the literal word "Topic:" in your response.**
+        3. Format the output strictly as a clean, unordered markdown list.
+           **The title/name of each topic must be in bold markdown (e.g., * **Topic Name:** Summary...).**
         4. DO NOT include any conversation metadata, greetings, or the final signature.
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
         6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
     `;
+    // --- (FIM DA MUDANÇA) ---
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
     
@@ -179,18 +181,18 @@ export default async function handler(req, res) {
         const historyHtml = generateHistoryHtml(raw_conversation_text);
 
         // ------------------------------------------------------------
-        // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA DE ERRO APLICADA)
+        // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA DE ERRO MANTIDA)
         // ------------------------------------------------------------
         
         let processedTemplate = email_template; // Define template inicial
 
-        // --- (MUDANÇA APLICADA AQUI) ---
         // 1. Verificar Resumo e Injetar
         if (topicSummary.startsWith('⚠️')) {
             // Se a sumarização falhou, remove o placeholder (não mostra nada)
             processedTemplate = processedTemplate.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', '');
         } else {
             // Se teve sucesso, formata e injeta o resumo
+            // A lógica de conversão .replace() já lida com o novo formato bold
             const topicSummaryHtml = topicSummary
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*/g, '•')
@@ -200,7 +202,6 @@ export default async function handler(req, res) {
                 `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a; font-family: ${fontStack};">${topicSummaryHtml}</div>`
             );
         }
-        // --- (FIM DA MUDANÇA) ---
         
         // 2. Converte \n para <br> APENAS no template de TEXTO.
         processedTemplate = processedTemplate.replace(/\n/g, '<br/>');
