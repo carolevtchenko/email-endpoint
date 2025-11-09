@@ -41,14 +41,13 @@ function normalizeUrl(u = '') {
 
 
 // ----------------------------------------------------------------------
-// FUNÇÃO DE SUMARIZAÇÃO DA IA (PROMPT ATUALIZADO)
+// FUNÇÃO DE SUMARIZAÇÃO DA IA (MANTIDA)
 // ----------------------------------------------------------------------
 async function summarizeConversation(conversationText) {
     if (!GEMINI_API_KEY) {
         return "⚠️ Não foi possível gerar o resumo. A chave da API Gemini está ausente.";
     }
 
-    // --- (MUDANÇA APLICADA AQUI) ---
     const systemPrompt = `
         You are an expert summary generator. Analyze the following conversation history between a User and Carol's Assistant. 
         Your task is to identify and summarize the key topics discussed.
@@ -61,7 +60,6 @@ async function summarizeConversation(conversationText) {
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
         6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
     `;
-    // --- (FIM DA MUDANÇA) ---
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
     
@@ -96,9 +94,10 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO DO HISTÓRICO (COR DO HEADER UNIFICADA) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (FONTE MANROPE APLICADA) ⬇️
 function generateHistoryHtml(rawConversationText) {
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
+    const fontStack = "'Manrope', Arial, sans-serif"; // Nossa fonte
 
     return blocks.map(block => {
         const parts = block.split(': ');
@@ -110,7 +109,7 @@ function generateHistoryHtml(rawConversationText) {
         
         const align = isUser ? 'right' : 'left';
         const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
-        const headerColor = '#555555'; // Cor unificada (cinza escuro)
+        const headerColor = '#555555'; // Cor unificada
         const headerAlign = align; 
         const textColor = '#1a1a1a';
 
@@ -126,12 +125,12 @@ function generateHistoryHtml(rawConversationText) {
                     <td>
                         <table align="${align}" border="0" cellspacing="0" cellpadding="0" style="max-width: 75%; border-collapse: collapse;"> 
                             <tr>
-                                <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 4px 5px; font-weight: 600; font-family: Arial, sans-serif; text-align: ${headerAlign};">
+                                <td style="font-size: 11px; color: ${headerColor}; padding: 0 5px 4px 5px; font-weight: 600; font-family: ${fontStack}; text-align: ${headerAlign};">
                                     ${headerText}
                                 </td>
                             </tr>
                             <tr>
-                                <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                <td style="background-color: ${bgColor}; color: ${textColor}; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; font-family: ${fontStack};">
                                     ${content.replace(/\n/g, '<br/>')}
                                 </td>
                             </tr>
@@ -155,6 +154,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' })
 
   const body = req.body;
+  const fontStack = "'Manrope', Arial, sans-serif"; // Nossa fonte
   
   // ----------------------------------------------------------------------
   // 1. CHAVE DE DECISÃO: O NOVO FLUXO (AI ASSISTANT)
@@ -179,21 +179,21 @@ export default async function handler(req, res) {
 
         // 1. Preparar Resumo: Converte **bold** PRIMEIRO, depois *bullets*
         const topicSummaryHtml = topicSummary
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 1. Converte bold
-            .replace(/\*/g, '•') // 2. Converte * restante para bullet
-            .replace(/\n/g, '<br/>'); // 3. Converte quebras de linha
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+            .replace(/\*/g, '•') 
+            .replace(/\n/g, '<br/>');
         
-        // 2. Substitui o placeholder de Resumo
+        // 2. Substitui o placeholder de Resumo (aplicando a fonte)
         let processedTemplate = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
-            `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
+            `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a; font-family: ${fontStack};">${topicSummaryHtml}</div>`
         );
         
         // 3. Converte \n para <br> APENAS no template de TEXTO.
         processedTemplate = processedTemplate.replace(/\n/g, '<br/>');
 
-        // 4. AGORA, substituímos o placeholder pelo HTML PURO.
+        // 4. AGORA, substituímos o placeholder pelo HTML PURO. (aplicando a fonte)
         const finalHtml = processedTemplate.replace('[[CONVERSATION_HISTORY]]', `
-            <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px;">
+            <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px; font-family: ${fontStack};">
                 History of conversation:
             </div>
             ${historyHtml}
@@ -207,14 +207,17 @@ export default async function handler(req, res) {
                 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
                 <title>Highlights from your chat with Carol's AI Assistant</title>
-            </head>
-            <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
+                <style type="text/css">
+                    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&display=swap');
+                </style>
+                </head>
+            <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: ${fontStack};">
                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td style="padding: 20px 0 30px 0;">
                             <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
                                 <tr>
-                                    <td style="padding: 30px 30px 10px 30px; color: #1a1a1a; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+                                    <td style="padding: 30px 30px 10px 30px; color: #1a1a1a; font-family: ${fontStack}; font-size: 14px; line-height: 1.6;">
                                         ${finalHtml}
                                     </td>
                                 </tr>
@@ -242,10 +245,9 @@ export default async function handler(req, res) {
   } 
   
   // ----------------------------------------------------------------------
-  // 2. FLUXO EXISTENTE (FALLBACK) - MANTIDO
+  // 2. FLUXO EXISTENTE (FALLBACK) - (FONTE APLICADA)
   // ----------------------------------------------------------------------
   else {
-    // ... (O fluxo de fallback permanece inalterado) ...
     const { to_email, message, link, linkLabel, signature, displayLink } = body
 
     if (!to_email || !message || !link || !linkLabel || !signature) {
@@ -259,8 +261,9 @@ export default async function handler(req, res) {
       const href = normalizeUrl(link) 
       const linkText = escapeHtml((displayLink && displayLink.trim()) || link) 
 
+      // (MUDANÇA APLICADA)
       const html = `
-        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000;">
+        <div style="font-family: ${fontStack}; font-size: 14px; color: #000000;">
           <div style="margin: 0; white-space: pre-line;">${msg}</div>
           <br />
           <div style="margin: 0;">
