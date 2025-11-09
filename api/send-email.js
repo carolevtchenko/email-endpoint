@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO CORRIGIDA (ESPAÇAMENTO REDUZIDO PARA 10px) ⬇️
+// ⬇️ FUNÇÃO CORRIGIDA (SOLUÇÃO COM SPACER DIV) ⬇️
 function generateHistoryHtml(rawConversationText) {
     // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
@@ -122,7 +122,7 @@ function generateHistoryHtml(rawConversationText) {
         const headerText = `${displayName} - ${dateStr} | ${timeStr}`;
         
         return `
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 10px;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td>
                         <table align="${align}" border="0" cellspacing="0" cellpadding="0" style="max-width: 75%; border-collapse: collapse;"> 
@@ -140,6 +140,7 @@ function generateHistoryHtml(rawConversationText) {
                     </td>
                 </tr>
             </table>
+            <div style="height: 10px; line-height: 10px; font-size: 10px;">&nbsp;</div>
         `;
     }).join('');
 }
