@@ -59,6 +59,7 @@ async function summarizeConversation(conversationText) {
         4. DO NOT include any conversation metadata, greetings, or the final signature.
         5. DO NOT include the assistant's initial welcome message or any explicit feedback messages (e.g., 'Yes', 'No', 'Thanks for your feedback!').
         6. EXCLUDE any topics related to the *process* of sending the chat history via email (e.g., offering to send the email, asking for a name, asking for an email address). Focus only on the professional content discussed.
+        7. Do not write the word "Topic" in the output, before the topic's title;
     `;
 
     const fullPrompt = systemPrompt + "\n\n### CONVERSATION TEXT\n" + conversationText;
