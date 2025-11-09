@@ -93,7 +93,7 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO DO HISTÓRICO (AGORA VAI FUNCIONAR) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (MANTIDA) ⬇️
 function generateHistoryHtml(rawConversationText) {
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
 
@@ -184,13 +184,15 @@ export default async function handler(req, res) {
             `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
-        // 3. (A CORREÇÃO) Converte \n para <br> APENAS no template de TEXTO.
-        // O placeholder [[CONVERSATION_HISTORY]] ainda é só um texto,
-        // então não é afetado.
+        // --- ⬇️ (A MUDANÇA ESTÁ AQUI) ⬇️ ---
+        // 3. Remove o comentário indesejado
+        processedTemplate = processedTemplate.replace('// NOVO PLACEHOLDER SIMPLES', '');
+        // --- ⬆️ (FIM DA MUDANÇA) ⬆️ ---
+
+        // 4. Converte \n para <br> APENAS no template de TEXTO.
         processedTemplate = processedTemplate.replace(/\n/g, '<br/>');
 
-        // 4. (A CORREÇÃO) AGORA, substituímos o placeholder pelo HTML PURO.
-        // O historyHtml não passa mais pelo replace, preservando sua estrutura.
+        // 5. AGORA, substituímos o placeholder pelo HTML PURO.
         const finalHtml = processedTemplate.replace('[[CONVERSATION_HISTORY]]', `
             <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px;">
                 History of conversation:
@@ -198,7 +200,7 @@ export default async function handler(req, res) {
             ${historyHtml}
         `); 
         
-        // 5. Estilização do Wrapper Principal
+        // 6. Estilização do Wrapper Principal
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
