@@ -93,28 +93,24 @@ async function summarizeConversation(conversationText) {
 // ----------------------------------------------------------------------
 
 
-// ⬇️ FUNÇÃO CORRIGIDA (SOLUÇÃO COM SPACER DIV) ⬇️
+// ⬇️ FUNÇÃO DO HISTÓRICO (AGORA VAI FUNCIONAR) ⬇️
 function generateHistoryHtml(rawConversationText) {
-    // rawConversationText format: "User: content\nAssistant: content\n..."
     const blocks = rawConversationText.split('\n').filter(line => line.trim().length > 0);
 
     return blocks.map(block => {
         const parts = block.split(': ');
         if (parts.length < 2) return ''; 
 
-        const role = parts[0].trim(); // "User" or "Assistant"
+        const role = parts[0].trim();
         const content = parts.slice(1).join(': ').trim();
-
         const isUser = role === 'User';
         
-        // --- Estilos ---
         const align = isUser ? 'right' : 'left';
         const bgColor = isUser ? '#E8F5FF' : '#F0F0F0'; 
         const headerColor = isUser ? '#0070D2' : '#555555'; 
         const headerAlign = align; 
         const textColor = '#1a1a1a';
 
-        // --- Nomes e Timestamps (Mantidos) ---
         const displayName = isUser ? 'You' : "Carol's Assistant"; 
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
@@ -144,7 +140,7 @@ function generateHistoryHtml(rawConversationText) {
         `;
     }).join('');
 }
-// ⬆️ FIM DA FUNÇÃO CORRIGIDA ⬆️
+// ⬆️ FIM DA FUNÇÃO ⬆️
 
 
 export default async function handler(req, res) {
@@ -171,11 +167,11 @@ export default async function handler(req, res) {
         // A. Processamento da IA (Sumarização)
         const topicSummary = await summarizeConversation(raw_conversation_text);
         
-        // B. Geração do HTML do Histórico (AGORA COM O NOVO ESTILO)
+        // B. Geração do HTML do Histórico (PURO)
         const historyHtml = generateHistoryHtml(raw_conversation_text);
 
         // ------------------------------------------------------------
-        // C. MONTAGEM FINAL DO TEMPLATE
+        // C. MONTAGEM FINAL DO TEMPLATE (LÓGICA CORRIGIDA)
         // ------------------------------------------------------------
 
         // 1. Preparar Resumo: Markdown * para bullet points HTML
@@ -184,20 +180,25 @@ export default async function handler(req, res) {
             .replace(/\*/g, '•'); 
         
         // 2. Substitui o placeholder de Resumo
-        let finalHtml = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
+        let processedTemplate = email_template.replace('[[TOPIC_SUMMARY_PLACEHOLDER]]', 
             `<div style="padding: 10px 0 20px 0; font-size: 14px; line-height: 1.5; color: #1a1a1a;">${topicSummaryHtml}</div>`
         );
         
-        // 3. Substitui o placeholder do Histórico ([[CONVERSATION_HISTORY]])
-        // Insere o cabeçalho do histórico ANTES do HTML das bolhas.
-        finalHtml = finalHtml.replace('[[CONVERSATION_HISTORY]]', `
+        // 3. (A CORREÇÃO) Converte \n para <br> APENAS no template de TEXTO.
+        // O placeholder [[CONVERSATION_HISTORY]] ainda é só um texto,
+        // então não é afetado.
+        processedTemplate = processedTemplate.replace(/\n/g, '<br/>');
+
+        // 4. (A CORREÇÃO) AGORA, substituímos o placeholder pelo HTML PURO.
+        // O historyHtml não passa mais pelo replace, preservando sua estrutura.
+        const finalHtml = processedTemplate.replace('[[CONVERSATION_HISTORY]]', `
             <div style="padding-top: 20px; padding-bottom: 10px; font-weight: bold; font-size: 16px;">
                 History of conversation:
             </div>
             ${historyHtml}
         `); 
         
-        // 4. Estilização do Wrapper Principal (MANTIDA)
+        // 5. Estilização do Wrapper Principal
         const htmlWrapper = `
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
@@ -213,7 +214,7 @@ export default async function handler(req, res) {
                             <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
                                 <tr>
                                     <td style="padding: 30px 30px 10px 30px; color: #1a1a1a; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">
-                                        ${finalHtml.replace(/\n/g, '<br/>')}
+                                        ${finalHtml}
                                     </td>
                                 </tr>
                                 <tr>
@@ -250,6 +251,7 @@ export default async function handler(req, res) {
   // 2. FLUXO EXISTENTE (FALLBACK) - MANTIDO
   // ----------------------------------------------------------------------
   else {
+    // ... (O fluxo de fallback permanece inalterado) ...
     const { to_email, message, link, linkLabel, signature, displayLink } = body
 
     if (!to_email || !message || !link || !linkLabel || !signature) {
